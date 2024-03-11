@@ -8,11 +8,11 @@ app.use(cors());
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 
-require("dotenv").config({ path: "./config.env" });
-
 const path = require("path");
 const PORT = process.env.PORT || 5001;
-//app.set('port', (process.env.PORT || 5001));
+
+// Allow ".env" to be used
+require("dotenv").config();
 
 // Connect to MongoDB
 const { MongoClient } = require("mongodb");
@@ -71,6 +71,10 @@ app.post('/api/Login', async (req, res, next) =>
             ln = results[0].LastName;
             em = results[0].Email;
             vr = results[0].isVerified;
+        }
+
+        if ( id == -1 ) {
+            error = "User does not exist"
         }
     }
     catch(e)
