@@ -24,6 +24,7 @@ const client = new MongoClient(url, {
 });
 client.connect(console.log("mongodb connected"));
 const db = client.db("VirtualCloset");
+const ObjectId = require('mongodb').ObjectId;   // Get ObjectId type
 
 // Run Server
 app.listen(PORT, () =>
@@ -101,6 +102,37 @@ app.post('/api/Register', async (req, res, next) =>
     try
     {
         const results = db.collection('Users').insertOne(newUser);
+    }
+    catch(e)
+    {
+        error = e.toString();
+    }
+
+    var ret = { error: error };
+    res.status(200).json(ret);
+});
+
+// Update Password API Endpoint
+app.post('/api/UpdatePass', async (req, res, next) =>
+{
+    // incoming: userId, newPassword
+    // outgoing: error
+
+    const { userId, newPassword } = req.body;
+
+    const filter = { _id: new ObjectId(userId) };
+    const updateDoc = {
+        $set: {
+            Password: newPassword
+        },
+    };
+    const options = { upsert: false }
+
+    var error = '';
+
+    try
+    {
+        const results = db.collection('Users').updateOne(filter, updateDoc, options);
     }
     catch(e)
     {
