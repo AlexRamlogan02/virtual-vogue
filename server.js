@@ -26,6 +26,32 @@ client.connect(console.log("mongodb connected"));
 const db = client.db("VirtualCloset");
 const ObjectId = require('mongodb').ObjectId;   // Get ObjectId type
 
+// GridFS
+// const methodOverride = require('method-override');
+// const multer = require('multer');
+// const GridFsStorage = require('multer-gridfs-storage');
+
+// const storage = new GridFsStorage({
+//     url: url,
+//     file: (req, file) => {
+//         return new Promise((resolve, reject) => {
+//             crypto.randomBytes(16, (err, buf) => {
+//                 if (err) {
+//                     return reject(err);
+//                 }
+//                 const filename = buf.toString('hex') + path.extname(file.originalname);
+//                 const fileInfo = {
+//                     filename: filename,
+//                     bucketName: 'uploads'
+//                 };
+//                 resolve(fileInfo);
+//             });
+//         });
+//     }
+// });
+
+// const upload = mullter({ storage });
+
 // Run Server
 app.listen(PORT, () =>
 {
@@ -124,6 +150,37 @@ app.post('/api/UpdatePass', async (req, res, next) =>
     const updateDoc = {
         $set: {
             Password: newPassword
+        },
+    };
+    const options = { upsert: false }
+
+    var error = '';
+
+    try
+    {
+        const results = db.collection('Users').updateOne(filter, updateDoc, options);
+    }
+    catch(e)
+    {
+        error = e.toString();
+    }
+
+    var ret = { error: error };
+    res.status(200).json(ret);
+});
+
+// Update isVerified API Endpoint
+app.post('/api/UpdateVerification', async (req, res, next) =>
+{
+    // incoming: userId, verified
+    // outgoing: error
+
+    const { userId, verified } = req.body;
+
+    const filter = { _id: new ObjectId(userId) };
+    const updateDoc = {
+        $set: {
+            isVerified: verified
         },
     };
     const options = { upsert: false }
