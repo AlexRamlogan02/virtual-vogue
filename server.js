@@ -10,6 +10,7 @@ app.use(bodyParser.json());
 
 require("dotenv").config();
 
+const uploadRoute = require("./routes/routeUpload");
 const path = require("path");
 const PORT = process.env.PORT || 5002;
 //app.set('port', (process.env.PORT || 5002));
@@ -24,8 +25,6 @@ const client = new MongoClient(url, {
 });
 client.connect(console.log("mongodb connected"));
 const db = client.db("VirtualCloset");
-
-const imageRoutes = require("./routes/imageRoutes");
 
 // Run Server
 app.listen(PORT, () => {
@@ -116,7 +115,7 @@ app.post("/api/Register", async (req, res, next) => {
 });
 
 // IMG handling
-app.use("/api", imageRoutes);
+app.use("/api", uploadRoute);
 
 // Heroku Deployment
 if (process.env.NODE_ENV === "production") {

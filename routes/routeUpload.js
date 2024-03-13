@@ -1,15 +1,26 @@
 const express = require("express");
 const router = express.Router();
-const cloudinary = require("cloudinary").v2;
+const cloudinary = require("../utils/cloudinary");
+const upload = require("../middleware/multer");
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDNAME,
-  api_key: process.env.CLOUDAPIKEY,
-  api_secret: process.env.CLOUDINARYSECRET,
-  secure: true,
+router.post("/upload", upload.single("image"), async (req, res) => {
+  cloudinary.uploader.upload(req.file.path, function (err, result) {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Error",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Uploaded!",
+      data: result,
+    });
+  });
 });
 
-// Handle image upload
+/*// Handle image upload
 router.post("/saveimage", async (req, res) => {
   try {
     const { file } = req.body; // Assuming you're sending the image file in the request body
@@ -38,6 +49,6 @@ router.post("/saveimage", async (req, res) => {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to upload image" });
   }
-});
+});*/
 
 module.exports = router;
