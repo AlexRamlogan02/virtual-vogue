@@ -10,7 +10,10 @@ app.use(bodyParser.json());
 
 require("dotenv").config();
 
-const uploadRoute = require("./routes/routeUpload");
+const cloudinary = require("./utils/cloudinary");
+const upload = require("./middleware/multer");
+
+//const uploadRoute = require("./routes/routeUpload");
 const path = require("path");
 const PORT = process.env.PORT || 5002;
 //app.set('port', (process.env.PORT || 5002));
@@ -115,7 +118,30 @@ app.post("/api/Register", async (req, res, next) => {
 });
 
 // IMG handling
-app.use("/api", uploadRoute);
+//app.use("/api", uploadRoute);
+app.post("/api/Upload", upload.single("image"), async (req, res) => {
+  try {
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path);
+
+    // Save public ID to MongoDB
+    db.collection("Images").insertOne({ publicId: result.public_id });
+
+    // Respond with success message and Cloudinary data
+    res.status(200).json({
+      success: true,
+      message: "Uploaded!",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error uploading image",
+      error: error.message,
+    });
+  }
+});
 
 // Heroku Deployment
 if (process.env.NODE_ENV === "production") {
