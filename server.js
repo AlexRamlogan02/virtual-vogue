@@ -118,7 +118,8 @@ app.post("/api/Register", async (req, res, next) => {
 });
 
 // IMG handling
-//app.use("/api", uploadRoute);
+
+// Upload Image
 app.post("/api/Upload", upload.single("image"), async (req, res) => {
   try {
     // Upload image to Cloudinary
@@ -142,6 +143,18 @@ app.post("/api/Upload", upload.single("image"), async (req, res) => {
     });
   }
 });
+
+// View the photos
+// id is the public id
+//<img src="https://res.cloudinary.com/${cloudinaryConfig.cloud_name}/image/upload/w_200,h_100,c_fill,q_100/${id}.jpg"></img>
+
+// Delete Image
+/*app.post("/api/delete-photo", async (req, res) => {
+    // delete from db
+
+    // actually delete the photo from cloudinary
+    cloudinary.uploader.destroy(req.body.id);
+})*/
 
 // Heroku Deployment
 if (process.env.NODE_ENV === "production") {
