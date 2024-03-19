@@ -120,6 +120,7 @@ app.post("/api/Register", async (req, res, next) => {
 // IMG handling
 
 // Upload Image
+// make file size of photos limiter and also maybe img compression
 app.post("/api/Upload", upload.single("image"), async (req, res) => {
   try {
     // Upload image to Cloudinary
@@ -138,7 +139,7 @@ app.post("/api/Upload", upload.single("image"), async (req, res) => {
     console.error("Error uploading image:", error);
     res.status(500).json({
       success: false,
-      message: "Error uploading image",
+      message: "Error uploading image, maybe file size too large? (Max 10 mb)",
       error: error.message,
     });
   }
@@ -149,12 +150,31 @@ app.post("/api/Upload", upload.single("image"), async (req, res) => {
 //<img src="https://res.cloudinary.com/${cloudinaryConfig.cloud_name}/image/upload/w_200,h_100,c_fill,q_100/${id}.jpg"></img>
 
 // Delete Image
-/*app.post("/api/delete-photo", async (req, res) => {
-    // delete from db
+app.post("/api/DeletePhoto", async (req, res) => {
+  try {
+    const imageId = req.body.id;
 
+    // delete from db
+    await db.collection("Images").deleteOne({ publicId: imageId });
     // actually delete the photo from cloudinary
-    cloudinary.uploader.destroy(req.body.id);
-})*/
+    await cloudinary.uploader.destroy(req.body.id);
+
+    // response
+    res.status(200).json({
+      success: true,
+      message: "Image deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting image",
+      error: error.message,
+    });
+  }
+});
+
+// Delete all photos off of a user
 
 // Heroku Deployment
 if (process.env.NODE_ENV === "production") {
