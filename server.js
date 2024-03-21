@@ -145,9 +145,38 @@ app.post("/api/Upload", upload.single("image"), async (req, res) => {
   }
 });
 
-// View the photos
+// View a photo
 // id is the public id
 //<img src="https://res.cloudinary.com/${cloudinaryConfig.cloud_name}/image/upload/w_200,h_100,c_fill,q_100/${id}.jpg"></img>
+app.get("/api/ViewImage/:id", async (req, res) => {
+  const photoId = req.params.id;
+
+  try {
+    // Get image and construct the link using cloudinary
+    const result = await cloudinary.api.resource(photoId);
+
+    // if (image) then send URL as a response
+    if (result) {
+      const imageUrl = result.secure_url;
+      res.status(200).json({
+        success: true,
+        imageUrl,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: "Image not found",
+      });
+    }
+  } catch (error) {
+    console.error("Error retrieving image:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving image",
+      error: error.message,
+    });
+  }
+});
 
 // Delete Image
 app.post("/api/DeletePhoto", async (req, res) => {
