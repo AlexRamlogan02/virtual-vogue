@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5002;
 //app.set('port', (process.env.PORT || 5002));
 
 // Connect to MongoDB
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const url = process.env.ATLAS_URI;
 console.log(url);
 const client = new MongoClient(url, {
@@ -103,12 +103,13 @@ app.post("/api/Register", async (req, res, next) => {
     LastName: lastName,
     Email: email,
     isVerified: false,
+    Images: [], // Empty array for images
   };
   var error = "";
   var id = -1;
 
   try {
-    const results = db.collection("Users").insertOne(newUser);
+    const results = await db.collection("Users").insertOne(newUser);
   } catch (e) {
     error = e.toString();
   }
@@ -121,13 +122,19 @@ app.post("/api/Register", async (req, res, next) => {
 
 // Upload Image
 // make file size of photos limiter and also maybe img compression
-app.post("/api/Upload", upload.single("image"), async (req, res) => {
+app.post("/api/Upload/:userId", upload.single("image"), async (req, res) => {
   try {
+    const userId = req.params.userId;
+
     // Upload image to Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path);
 
     // Save public ID to MongoDB
-    db.collection("Images").insertOne({ publicId: result.public_id });
+    //db.collection("Images").insertOne({ publicId: result.public_id });
+    await db.collection("Users").updateOne(
+      { _id: new ObjectId(userId) }, //userId being the object id in the MongoDb
+      { $push: { Images: { publicId: result.public_id } } }
+    );
 
     // Respond with success message and Cloudinary data
     res.status(200).json({
@@ -178,15 +185,24 @@ app.get("/api/ViewImage/:id", async (req, res) => {
   }
 });
 
-// Delete Image
-app.post("/api/DeletePhoto", async (req, res) => {
+// Delete Image from a specific user using their objectId and imageId
+app.post("/api/DeletePhoto/:userId", async (req, res) => {
   try {
+    const userId = req.params.userId;
     const imageId = req.body.id;
 
-    // delete from db
-    await db.collection("Images").deleteOne({ publicId: imageId });
     // actually delete the photo from cloudinary
     await cloudinary.uploader.destroy(req.body.id);
+
+    // delete from db
+    const deleteResult = await db.collection("Users").updateOne(
+      { _id: new ObjectId(userId) }, //userId being the object id in the MongoDb
+      { $pull: { Images: { publicId: imageId } } }
+    );
+
+    if (deleteResult.modifiedCount === 0) {
+      throw new Error("Image not found in the database");
+    }
 
     // response
     res.status(200).json({
