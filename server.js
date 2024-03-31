@@ -125,15 +125,18 @@ app.post("/api/Register", async (req, res, next) => {
 app.post("/api/Upload/:userId", upload.single("image"), async (req, res) => {
   try {
     const userId = req.params.userId;
+    const tag = req.body.tag;
 
     // Upload image to Cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path);
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      tags: [tag],
+    });
 
     // Save public ID to MongoDB
     //db.collection("Images").insertOne({ publicId: result.public_id });
     await db.collection("Users").updateOne(
       { _id: new ObjectId(userId) }, //userId being the object id in the MongoDb
-      { $push: { Images: { publicId: result.public_id } } }
+      { $push: { Images: { publicId: result.public_id, tag: tag } } }
     );
 
     // Respond with success message and Cloudinary data
@@ -180,6 +183,94 @@ app.get("/api/ViewImage/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error retrieving image",
+      error: error.message,
+    });
+  }
+});
+
+// fetch ALL the images associated to a user
+app.get("/api/images/:userId", async (req, res) => {
+  const userId = req.params.userId; // Get user ID from URL parameter
+  const tag = req.params.tag; // Get tag from URL parameter
+
+  try {
+    // Retrieve user's images from MongoDB
+    const user = await db
+      .collection("Users")
+      .findOne({ _id: new ObjectId(userId) });
+
+    // If the user doesn't exist or has no images, return an empty response
+    if (!user || !user.Images || user.Images.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No images found for the user." });
+    }
+    // Extract public IDs of images
+    const imageIds = user.Images.map((image) => image.publicId);
+
+    // Fetch images from Cloudinary using public IDs
+    const { resources } = await cloudinary.api.resources_by_ids(imageIds, {
+      tags: true,
+    });
+
+    // Extract image URLs or other relevant data
+    const imageUrls = resources.map((image) => image.secure_url);
+
+    // Respond with the images
+    res.status(200).json({ success: true, images: imageUrls });
+  } catch (error) {
+    console.error("Error fetching images for user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching images for user",
+      error: error.message,
+    });
+  }
+});
+
+// fetch all the images by specific tag
+app.get("/api/images/:userId/:tag", async (req, res) => {
+  const userId = req.params.userId; // Get user ID from URL parameter
+  const tag = req.params.tag; // Get tag from URL parameter
+
+  try {
+    // Retrieve user's images with the specified tag from MongoDB
+    const user = await db
+      .collection("Users")
+      .findOne({ _id: new ObjectId(userId) });
+
+    // If the user doesn't exist or has no images associated with the tag, return an empty response
+    if (
+      !user ||
+      !user.Images ||
+      user.Images.length === 0 ||
+      !user.Images.some((image) => image.tag === tag)
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "No images found for the specified tag.",
+      });
+    }
+    const filteredImages = user.Images.filter((image) => image.tag === tag);
+
+    // Extract public IDs of filtered images
+    const imageIds = filteredImages.map((image) => image.publicId);
+
+    // Fetch images from Cloudinary using public IDs
+    const { resources } = await cloudinary.api.resources_by_ids(imageIds, {
+      tags: true,
+    });
+
+    // Extract image URLs or other relevant data
+    const imageUrls = resources.map((image) => image.secure_url);
+
+    // Respond with the images
+    res.status(200).json({ success: true, images: imageUrls });
+  } catch (error) {
+    console.error("Error fetching images by user ID and tag:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching images by user ID and tag",
       error: error.message,
     });
   }
