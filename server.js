@@ -312,6 +312,51 @@ app.post("/api/DeletePhoto/:userId", async (req, res) => {
 
 // Delete all photos off of a user
 
+
+// Function to delete images associated with a user from Cloudinary
+async function deleteImagesFromCloudinary(imageIds) {
+  try {
+    // Delete images from Cloudinary using their public IDs
+    const deleteResults = await cloudinary.api.delete_resources(imageIds);
+
+    // Return the delete results
+    return deleteResults;
+  } catch (error) {
+    console.error('Error deleting images from Cloudinary:', error);
+    throw error;
+  }
+}
+
+// Endpoint to delete a user (and associated images) from the system
+app.delete('/api/DeleteUser/:userId', async (req, res) => {
+  const userId = req.params.userId; // Get user ID from URL parameter
+
+  try {
+    // Retrieve user's images from MongoDB
+    const user = await db.collection("Users").findOne({ _id: new ObjectId(userId) });
+
+    // If the user doesn't exist, return a 404 Not Found response
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // If the user exists and has images, delete them from Cloudinary
+    if (user.Images && user.Images.length > 0) {
+      const imageIds = user.Images.map(image => image.publicId);
+      await deleteImagesFromCloudinary(imageIds);
+    }
+
+    // Delete the user's document from MongoDB
+    await db.collection("Users").deleteOne({ _id: new ObjectId(userId) });
+
+    // Respond with success message
+    res.status(200).json({ success: true, message: 'User deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ success: false, message: 'Error deleting user', error: error.message });
+  }
+});
+
 // Heroku Deployment
 if (process.env.NODE_ENV === "production") {
   // Set static folder
