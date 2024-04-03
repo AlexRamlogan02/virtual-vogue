@@ -1,144 +1,27 @@
 const express = require("express");
-const app = express();
-const connectToMongoDB = require("./utils/mongoUtil");
-app.use(express.json());
-
-const cors = require("cors");
-app.use(cors());
-
-const bodyParser = require("body-parser");
-app.use(bodyParser.json());
-
-require("dotenv").config();
-
-//const cloudinary = require("./utils/cloudinary");
-//const upload = require("./middleware/multer");
-const imageRoutes = require("./routes/imageRoutes");
-
-// Use image routes
-app.use("/api/images", imageRoutes);
-
-const path = require("path");
-const PORT = process.env.PORT || 5002;
-//app.set('port', (process.env.PORT || 5002));
-
+const router = express.Router();
+const connectToMongoDB = require("../utils/mongoUtil");
+const cloudinary = require("../utils/cloudinary");
+const upload = require("../middleware/multer");
 var db = null;
-// Connect to MongoDB
-/*const { MongoClient, ObjectId } = require("mongodb");
-const url = process.env.ATLAS_URI;
-console.log(url);
-const client = new MongoClient(url, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-client.connect(console.log("mongodb connected"));
-const db = client.db("VirtualCloset");*/
-async function startServer() {
+
+async function setupRoutes() {
   try {
     db = await connectToMongoDB(process.env.ATLAS_URI, "VirtualCloset");
-    console.log("MongoDB connection established in server");
-    // Other configurations and middleware...
+    console.log("MongoDB connection established in imageRoutes");
+    // Define image routes using db
   } catch (error) {
-    console.error("Error starting server:", error);
+    console.error("Error setting up image routes:", error);
   }
 }
 
-startServer();
+setupRoutes();
 
-// Run Server
-app.listen(PORT, () => {
-  console.log(`Server is running on port: ${PORT}`);
-});
-
-// Headers
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PATCH, DELETE, OPTIONS"
-  );
-  next();
-});
-
-// Login API Endpoint
-app.post("/api/Login", async (req, res, next) => {
-  // incoming: login, password
-  // outgoing: userId (_id), firstName, lastName, email, verified (isVerified), error
-
-  var error = "";
-  var id = -1;
-  var fn = "";
-  var ln = "";
-  var em = "";
-  var vr = false;
-
-  try {
-    const { login, password } = req.body;
-    const results = await db
-      .collection("Users")
-      .find({ Login: login, Password: password })
-      .toArray();
-
-    if (results.length > 0) {
-      id = results[0]._id;
-      fn = results[0].FirstName;
-      ln = results[0].LastName;
-      em = results[0].Email;
-      vr = results[0].isVerified;
-    }
-  } catch (e) {
-    error = e.toString();
-  }
-
-  var ret = {
-    userId: id,
-    firstName: fn,
-    lastName: ln,
-    email: em,
-    verified: vr,
-    error: error,
-  };
-  res.status(200).json(ret);
-});
-
-// Register API Endpoint
-app.post("/api/Register", async (req, res, next) => {
-  // incoming: login, password, firstName, lastName, email
-  // outgoing: userId, error
-
-  const { login, password, firstName, lastName, email } = req.body;
-
-  const newUser = {
-    Login: login,
-    Password: password,
-    FirstName: firstName,
-    LastName: lastName,
-    Email: email,
-    isVerified: false,
-    Images: [], // Empty array for images
-  };
-  var error = "";
-  var id = -1;
-
-  try {
-    const results = await db.collection("Users").insertOne(newUser);
-  } catch (e) {
-    error = e.toString();
-  }
-
-  var ret = { error: error };
-  res.status(200).json(ret);
-});
-
-/*// IMG handling
+// Endpoints
 
 // Upload Image
 // make file size of photos limiter and also maybe img compression
-app.post("/api/Upload/:userId", upload.single("image"), async (req, res) => {
+router.post("/Upload/:userId", upload.single("image"), async (req, res) => {
   try {
     const userId = req.params.userId;
     const tag = req.body.tag;
@@ -174,7 +57,7 @@ app.post("/api/Upload/:userId", upload.single("image"), async (req, res) => {
 // View a photo
 // id is the public id
 //<img src="https://res.cloudinary.com/${cloudinaryConfig.cloud_name}/image/upload/w_200,h_100,c_fill,q_100/${id}.jpg"></img>
-app.get("/api/ViewImage/:id", async (req, res) => {
+router.get("/ViewImage/:id", async (req, res) => {
   const photoId = req.params.id;
 
   try {
@@ -205,7 +88,7 @@ app.get("/api/ViewImage/:id", async (req, res) => {
 });
 
 // fetch ALL the images associated to a user
-app.get("/api/images/:userId", async (req, res) => {
+router.get("/:userId", async (req, res) => {
   const userId = req.params.userId; // Get user ID from URL parameter
   const tag = req.params.tag; // Get tag from URL parameter
 
@@ -245,7 +128,7 @@ app.get("/api/images/:userId", async (req, res) => {
 });
 
 // fetch all the images by specific tag
-app.get("/api/images/:userId/:tag", async (req, res) => {
+router.get("/:userId/:tag", async (req, res) => {
   const userId = req.params.userId; // Get user ID from URL parameter
   const tag = req.params.tag; // Get tag from URL parameter
 
@@ -293,7 +176,7 @@ app.get("/api/images/:userId/:tag", async (req, res) => {
 });
 
 // Delete Image from a specific user using their objectId and imageId
-app.post("/api/DeletePhoto/:userId", async (req, res) => {
+router.post("/DeletePhoto/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
     const imageId = req.body.id;
@@ -343,7 +226,7 @@ async function deleteImagesFromCloudinary(imageIds) {
 }
 
 // Endpoint to delete a user (and associated images) from the system
-app.delete("/api/DeleteUser/:userId", async (req, res) => {
+router.delete("/DeleteUser/:userId", async (req, res) => {
   const userId = req.params.userId; // Get user ID from URL parameter
 
   try {
@@ -380,13 +263,6 @@ app.delete("/api/DeleteUser/:userId", async (req, res) => {
       error: error.message,
     });
   }
-});*/
+});
 
-// Heroku Deployment
-if (process.env.NODE_ENV === "production") {
-  // Set static folder
-  app.use(express.static("frontend/build"));
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"));
-  });
-}
+module.exports = router;
