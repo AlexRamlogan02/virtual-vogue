@@ -189,7 +189,6 @@ app.get("/api/ViewImage/:id", async (req, res) => {
 // fetch ALL the images associated to a user
 app.get("/api/images/:userId", async (req, res) => {
   const userId = req.params.userId; // Get user ID from URL parameter
-  const tag = req.params.tag; // Get tag from URL parameter
 
   try {
     // Retrieve user's images from MongoDB
