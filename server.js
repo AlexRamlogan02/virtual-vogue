@@ -1,6 +1,5 @@
 const express = require("express");
 const app = express();
-const connectToMongoDB = require("./utils/mongoUtil");
 app.use(express.json());
 
 const cors = require("cors");
@@ -11,20 +10,15 @@ app.use(bodyParser.json());
 
 require("dotenv").config();
 
-//const cloudinary = require("./utils/cloudinary");
-//const upload = require("./middleware/multer");
-const imageRoutes = require("./routes/imageRoutes");
-
-// Use image routes
-app.use("/api/images", imageRoutes);
+const cloudinary = require("./utils/cloudinary");
+const upload = require("./middleware/multer");
 
 const path = require("path");
 const PORT = process.env.PORT || 5002;
 //app.set('port', (process.env.PORT || 5002));
 
-var db = null;
 // Connect to MongoDB
-/*const { MongoClient, ObjectId } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const url = process.env.ATLAS_URI;
 console.log(url);
 const client = new MongoClient(url, {
@@ -32,18 +26,7 @@ const client = new MongoClient(url, {
   useUnifiedTopology: true,
 });
 client.connect(console.log("mongodb connected"));
-const db = client.db("VirtualCloset");*/
-async function startServer() {
-  try {
-    db = await connectToMongoDB(process.env.ATLAS_URI, "VirtualCloset");
-    console.log("MongoDB connection established in server");
-    // Other configurations and middleware...
-  } catch (error) {
-    console.error("Error starting server:", error);
-  }
-}
-
-startServer();
+const db = client.db("VirtualCloset");
 
 // Run Server
 app.listen(PORT, () => {
@@ -134,8 +117,7 @@ app.post("/api/Register", async (req, res, next) => {
   res.status(200).json(ret);
 });
 
-/*// IMG handling
-
+// IMG handling
 // Upload Image
 // make file size of photos limiter and also maybe img compression
 app.post("/api/Upload/:userId", upload.single("image"), async (req, res) => {
@@ -380,7 +362,7 @@ app.delete("/api/DeleteUser/:userId", async (req, res) => {
       error: error.message,
     });
   }
-});*/
+});
 
 // Heroku Deployment
 if (process.env.NODE_ENV === "production") {
