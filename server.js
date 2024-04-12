@@ -523,10 +523,14 @@ app.post("/api/DeletePhoto/:userId", async (req, res) => {
     );
 
     if (deleteResult.modifiedCount === 0) {
-      throw new Error("Image not found in the database");
+      // If no images were deleted, return a 404 error
+      return res.status(404).json({
+        success: false,
+        message: "Image and/or User not found in the database",
+      });
     }
 
-    // response
+    // Response for successful deletion
     res.status(200).json({
       success: true,
       message: "Image deleted successfully",
