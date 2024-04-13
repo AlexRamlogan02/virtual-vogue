@@ -553,15 +553,21 @@ app.post("/api/Outfits/:userId", async (req, res) => {
   try {
     // Check if outfit name is provided and not empty
     if (!outfitData.outfitName || outfitData.outfitName.trim() === "") {
-      return res.status(400).json({ success: false, message: "Outfit name is required." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Outfit name is required." });
     }
 
     // Retrieve user's outfits from MongoDB
-    let user = await db.collection("Users").findOne({ _id: new ObjectId(userId) });
+    let user = await db
+      .collection("Users")
+      .findOne({ _id: new ObjectId(userId) });
 
     // If the user doesn't exist, return a 404 response
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
     }
 
     // Initialize the Outfits array if it doesn't exist
@@ -570,19 +576,30 @@ app.post("/api/Outfits/:userId", async (req, res) => {
     }
 
     // Check if the outfit name is already taken
-    const outfitNameTaken = user.Outfits.some(outfit => outfit.outfitName === outfitData.outfitName);
+    const outfitNameTaken = user.Outfits.some(
+      (outfit) => outfit.outfitName === outfitData.outfitName
+    );
     if (outfitNameTaken) {
-      return res.status(400).json({ success: false, message: "Outfit name is already taken." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Outfit name is already taken." });
     }
 
     // Add the new outfit to the user's outfits array
     user.Outfits.push(outfitData);
 
     // Update the user document in the database to include the new outfit
-    await db.collection("Users").updateOne({ _id: new ObjectId(userId) }, { $set: { Outfits: user.Outfits } });
+    await db
+      .collection("Users")
+      .updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { Outfits: user.Outfits } }
+      );
 
     // Respond with success message
-    res.status(201).json({ success: true, message: "Outfit uploaded successfully." });
+    res
+      .status(201)
+      .json({ success: true, message: "Outfit created successfully." });
   } catch (error) {
     console.error("Error uploading outfit for user:", error);
     res.status(500).json({
@@ -629,29 +646,47 @@ app.delete("/api/Outfits/:userId/:outfitName", async (req, res) => {
 
   try {
     // Retrieve user's outfits from MongoDB
-    let user = await db.collection("Users").findOne({ _id: new ObjectId(userId) });
+    let user = await db
+      .collection("Users")
+      .findOne({ _id: new ObjectId(userId) });
 
     // If the user doesn't exist or has no outfits, return a 404 response
     if (!user || !user.Outfits) {
-      return res.status(404).json({ success: false, message: "User not found or no outfits found for the user." });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "User not found or no outfits found for the user.",
+        });
     }
 
     // Find the index of the outfit with the specified name in the user's outfits array
-    const outfitIndex = user.Outfits.findIndex(outfit => outfit.outfitName === outfitName);
+    const outfitIndex = user.Outfits.findIndex(
+      (outfit) => outfit.outfitName === outfitName
+    );
 
     // If outfit with specified name doesn't exist, return a 404 response
     if (outfitIndex === -1) {
-      return res.status(404).json({ success: false, message: "Outfit not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "Outfit not found." });
     }
 
     // Remove the outfit from the user's outfits array
     user.Outfits.splice(outfitIndex, 1);
 
     // Update the user document in the database to remove the outfit
-    await db.collection("Users").updateOne({ _id: new ObjectId(userId) }, { $set: { Outfits: user.Outfits } });
+    await db
+      .collection("Users")
+      .updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { Outfits: user.Outfits } }
+      );
 
     // Respond with success message
-    res.status(200).json({ success: true, message: "Outfit deleted successfully." });
+    res
+      .status(200)
+      .json({ success: true, message: "Outfit deleted successfully." });
   } catch (error) {
     console.error("Error deleting outfit for user:", error);
     res.status(500).json({
