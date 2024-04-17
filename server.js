@@ -551,9 +551,9 @@ app.post("/api/Outfits/:userId", async (req, res) => {
   const outfitData = req.body; // Outfit data from request body
 
   try {
-    // Check if outfit name is provided and not "?" or empty
+    // Check if outfit name is provided and does not contain a question mark
     const outfitName = outfitData.outfitName.trim();
-    if (!outfitName || outfitName === "?") {
+    if (!outfitName || outfitName.includes("?")) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid outfit name." });
