@@ -551,11 +551,12 @@ app.post("/api/Outfits/:userId", async (req, res) => {
   const outfitData = req.body; // Outfit data from request body
 
   try {
-    // Check if outfit name is provided and not empty
-    if (!outfitData.outfitName || outfitData.outfitName.trim() === "") {
+    // Check if outfit name is provided and not "?" or empty
+    const outfitName = outfitData.outfitName.trim();
+    if (!outfitName || outfitName === "?") {
       return res
         .status(400)
-        .json({ success: false, message: "Outfit name is required." });
+        .json({ success: false, message: "Invalid outfit name." });
     }
 
     // Retrieve user's outfits from MongoDB
@@ -652,12 +653,10 @@ app.delete("/api/Outfits/:userId/:outfitName", async (req, res) => {
 
     // If the user doesn't exist or has no outfits, return a 404 response
     if (!user || !user.Outfits) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "User not found or no outfits found for the user.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "User not found or no outfits found for the user.",
+      });
     }
 
     // Find the index of the outfit with the specified name in the user's outfits array
@@ -761,3 +760,5 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"));
   });
 }
+
+module.exports = app;
