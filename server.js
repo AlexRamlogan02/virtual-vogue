@@ -424,7 +424,6 @@ app.get("/api/images/:userId", async (req, res) => {
     const imageIds = imagesData.map((image) => image.publicId);
     const { resources } = await cloudinary.api.resources_by_ids(imageIds);
 
-
     // Combine image URLs with tags and public IDs
     const imagesWithTagsAndUrls = resources.map((cloudinaryImage) => {
       const userData = imagesData.find(
@@ -440,7 +439,6 @@ app.get("/api/images/:userId", async (req, res) => {
 
     // Respond with the images data (public IDs, tags, and URLs)
     res.status(200).json({ success: true, images: imagesWithTagsAndUrls });
-
   } catch (error) {
     console.error("Error fetching images for user:", error);
     res.status(500).json({
@@ -464,7 +462,6 @@ app.get("/api/images/:userId/:tags", async (req, res) => {
 
     // If the user doesn't exist or has no images, return an empty response
     if (!user || !user.Images || user.Images.length === 0) {
-
       return res.status(404).json({
         success: false,
         message: "No images found for the user.",
@@ -554,17 +551,24 @@ app.post("/api/Outfits/:userId", async (req, res) => {
   const outfitData = req.body; // Outfit data from request body
 
   try {
-    // Check if outfit name is provided and not empty
-    if (!outfitData.outfitName || outfitData.outfitName.trim() === "") {
-      return res.status(400).json({ success: false, message: "Outfit name is required." });
+    // Check if outfit name is provided and not "?" or empty
+    const outfitName = outfitData.outfitName.trim();
+    if (!outfitName || outfitName === "?") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid outfit name." });
     }
 
     // Retrieve user's outfits from MongoDB
-    let user = await db.collection("Users").findOne({ _id: new ObjectId(userId) });
+    let user = await db
+      .collection("Users")
+      .findOne({ _id: new ObjectId(userId) });
 
     // If the user doesn't exist, return a 404 response
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
     }
 
     // Initialize the Outfits array if it doesn't exist
@@ -573,19 +577,30 @@ app.post("/api/Outfits/:userId", async (req, res) => {
     }
 
     // Check if the outfit name is already taken
-    const outfitNameTaken = user.Outfits.some(outfit => outfit.outfitName === outfitData.outfitName);
+    const outfitNameTaken = user.Outfits.some(
+      (outfit) => outfit.outfitName === outfitData.outfitName
+    );
     if (outfitNameTaken) {
-      return res.status(400).json({ success: false, message: "Outfit name is already taken." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Outfit name is already taken." });
     }
 
     // Add the new outfit to the user's outfits array
     user.Outfits.push(outfitData);
 
     // Update the user document in the database to include the new outfit
-    await db.collection("Users").updateOne({ _id: new ObjectId(userId) }, { $set: { Outfits: user.Outfits } });
+    await db
+      .collection("Users")
+      .updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { Outfits: user.Outfits } }
+      );
 
     // Respond with success message
-    res.status(201).json({ success: true, message: "Outfit uploaded successfully." });
+    res
+      .status(201)
+      .json({ success: true, message: "Outfit uploaded successfully." });
   } catch (error) {
     console.error("Error uploading outfit for user:", error);
     res.status(500).json({
@@ -632,29 +647,45 @@ app.delete("/api/Outfits/:userId/:outfitName", async (req, res) => {
 
   try {
     // Retrieve user's outfits from MongoDB
-    let user = await db.collection("Users").findOne({ _id: new ObjectId(userId) });
+    let user = await db
+      .collection("Users")
+      .findOne({ _id: new ObjectId(userId) });
 
     // If the user doesn't exist or has no outfits, return a 404 response
     if (!user || !user.Outfits) {
-      return res.status(404).json({ success: false, message: "User not found or no outfits found for the user." });
+      return res.status(404).json({
+        success: false,
+        message: "User not found or no outfits found for the user.",
+      });
     }
 
     // Find the index of the outfit with the specified name in the user's outfits array
-    const outfitIndex = user.Outfits.findIndex(outfit => outfit.outfitName === outfitName);
+    const outfitIndex = user.Outfits.findIndex(
+      (outfit) => outfit.outfitName === outfitName
+    );
 
     // If outfit with specified name doesn't exist, return a 404 response
     if (outfitIndex === -1) {
-      return res.status(404).json({ success: false, message: "Outfit not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "Outfit not found." });
     }
 
     // Remove the outfit from the user's outfits array
     user.Outfits.splice(outfitIndex, 1);
 
     // Update the user document in the database to remove the outfit
-    await db.collection("Users").updateOne({ _id: new ObjectId(userId) }, { $set: { Outfits: user.Outfits } });
+    await db
+      .collection("Users")
+      .updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { Outfits: user.Outfits } }
+      );
 
     // Respond with success message
-    res.status(200).json({ success: true, message: "Outfit deleted successfully." });
+    res
+      .status(200)
+      .json({ success: true, message: "Outfit deleted successfully." });
   } catch (error) {
     console.error("Error deleting outfit for user:", error);
     res.status(500).json({
@@ -729,25 +760,27 @@ app.get("/api/SearchOutfits/:userId/:searchParam", async (req, res) => {
 
   try {
     const userId = req.params.userId; // Get userId from URL
-    const searchParam = (req.params.searchParam).toLowerCase(); // Get sequence of characters to search from URL
-    const user = await db.collection("Users").findOne({ _id: new ObjectId(userId) }); // Get user
+    const searchParam = req.params.searchParam.toLowerCase(); // Get sequence of characters to search from URL
+    const user = await db
+      .collection("Users")
+      .findOne({ _id: new ObjectId(userId) }); // Get user
 
     // User has outfits
     if (user.Outfits) {
       searchResults = user.Outfits.filter((outfit) =>
-        (outfit.outfitName.toLowerCase()).includes(searchParam)
+        outfit.outfitName.toLowerCase().includes(searchParam)
       );
     }
 
     var ret = { searchResults: searchResults, error: error };
     res.status(200).json(ret);
 
-  // An error was found
+    // An error was found
   } catch (e) {
     error = e.toString();
     var ret = { error: error };
     res.status(500).json(ret);
-  } 
+  }
 });
 
 // Heroku Deployment
