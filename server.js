@@ -137,9 +137,6 @@ app.post("/api/Register", async (req, res, next) => {
         results = await db.collection("Users").insertOne(newUser);
         if (results.acknowledged) {
           id = results.insertedId;
-          // JWT
-          const token = jwt.sign({ userId: id }, secretKey, { expiresIn: "1h" });
-          res.cookie("token", token, { httpOnly: true }); // Optionally set JWT as a cookie
         }
       } else {
         error = "An account is already associated with this email";
