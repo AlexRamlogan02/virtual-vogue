@@ -15,6 +15,9 @@ const PORT = process.env.PORT || 5001;
 // Allow ".env" to be used
 require("dotenv").config();
 
+const jwt = require("jsonwebtoken");
+const secretKey = "hello"
+
 const cloudinary = require("./utils/cloudinary");
 const upload = require("./middleware/multer");
 
@@ -60,6 +63,7 @@ app.post("/api/Login", async (req, res, next) => {
   var ln = "";
   var em = "";
   var vr = false;
+  var token = "";
 
   try {
     const { login, password } = req.body;
@@ -79,6 +83,9 @@ app.post("/api/Login", async (req, res, next) => {
     if (id == -1) {
       error = "User or password is incorrect";
     }
+
+    // Generate JWT
+    token = jwt.sign({ userId: id }, secretKey, { expiresIn: "1h" });
   } catch (e) {
     error = e.toString();
   }
@@ -89,6 +96,7 @@ app.post("/api/Login", async (req, res, next) => {
     lastName: ln,
     email: em,
     verified: vr,
+    token: token,
     error: error,
   };
   res.status(200).json(ret);
@@ -129,6 +137,9 @@ app.post("/api/Register", async (req, res, next) => {
         results = await db.collection("Users").insertOne(newUser);
         if (results.acknowledged) {
           id = results.insertedId;
+          // JWT
+          const token = jwt.sign({ userId: id }, secretKey, { expiresIn: "1h" });
+          res.cookie("token", token, { httpOnly: true }); // Optionally set JWT as a cookie
         }
       } else {
         error = "An account is already associated with this email";
