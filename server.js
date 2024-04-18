@@ -10,7 +10,7 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.json());
 
 const path = require("path");
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 
 // Allow ".env" to be used
 require("dotenv").config();
@@ -31,7 +31,7 @@ const db = client.db("VirtualCloset");
 const ObjectId = require("mongodb").ObjectId; // Get ObjectId type
 
 // Run Server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server is running on port: ${PORT}`);
 });
 
@@ -758,3 +758,5 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"));
   });
 }
+
+module.exports = app;
